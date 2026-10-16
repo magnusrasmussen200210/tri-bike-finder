@@ -1,0 +1,13 @@
+[Unit]
+Description=Tri bike finder: one check of buycycle and Kleinanzeigen
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=finder
+WorkingDirectory=/opt/tri-bike-finder
+# Pick up code updates pushed to GitHub before each check.
+ExecStartPre=-/usr/bin/git -C /opt/tri-bike-finder pull --ff-only --quiet
+ExecStart=/opt/tri-bike-finder/.venv/bin/python -m finder.main
+TimeoutStartSec=900
