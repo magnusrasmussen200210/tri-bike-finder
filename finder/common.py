@@ -33,7 +33,8 @@ ACCESSORY_WORDS = [
     "rollentrainer", "smart trainer", "tasche", "koffer", "bikebox", "bike box",
     "kurbel", "schaltwerk", "powermeter", "radcomputer", "sattelstütze", "vorbau",
     "trikot", "brille", "socken", "kassette", "scheibenrad", "bremssattel",
-    "gabel ", "transporttasche", "fahrradträger",
+    "gabel", "transporttasche", "fahrradträger", "bremshebel", "schalthebel",
+    "reifen", "schlauch", "flasche", "werkzeug", "ersatzteil",
 ]
 
 # Bike models and words that only appear when the ad is a whole tri/TT bike.
@@ -129,10 +130,19 @@ def detect_frameset(text: str) -> bool:
     return bool(FRAME_RE.search(text))
 
 
+WHOLE_BIKE_RE = re.compile(
+    r"\b(triathlonrad|triathlon[- ]rad|triathlonfahrrad|triathlonbike|zeitfahrrad|zeitrad|"
+    r"zeitfahrmaschine|tt[- ]?bike|tt[- ]rad|tri[- ]?bike|rennrad|fahrrad|komplettrad)\b", re.I)
+
+
 def looks_like_accessory(title: str) -> bool:
-    """True when the title is clearly a part/accessory rather than a bike or frame."""
+    """True when the title is clearly a part/accessory rather than a bike or frame.
+
+    Model names don't save an ad ("Speed Concept Aerobars" is a part); only a frame
+    word or a word that means a whole bike does.
+    """
     t = f" {title.lower()} "
-    if detect_frameset(t) or _has_any(t, BIKE_MODEL_WORDS):
+    if detect_frameset(t) or WHOLE_BIKE_RE.search(t):
         return False
     return _has_any(t, ACCESSORY_WORDS)
 

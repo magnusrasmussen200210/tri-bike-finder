@@ -19,6 +19,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES = {"buycycle": buycycle, "kleinanzeigen": kleinanzeigen}
 MAX_DETAIL_FETCHES = 25      # per site per run, keeps each run short
 MIN_PRICE = 150              # below this it's almost never a real bike
+# Many sellers never mention brakes. Old rim-brake tri bikes are mostly cheap, so ads
+# without brake info are still sent from this price, marked "brakes not stated".
+UNKNOWN_BRAKES_MIN_PRICE = 1200
 PRICE_DROP_ALERT = 0.05      # tell me when a sent bike drops 5% or more
 BLOCKED_RUNS_BEFORE_WARNING = 4
 
@@ -33,8 +36,11 @@ def load_env(path: Path) -> None:
 
 
 def qualifies(l: Listing) -> bool:
-    return (l.price is not None and MIN_PRICE <= l.price <= MAX_PRICE
-            and l.brakes == "disc")
+    if l.price is None or not MIN_PRICE <= l.price <= MAX_PRICE:
+        return False
+    if l.brakes == "disc":
+        return True
+    return l.brakes == "unknown" and l.price >= UNKNOWN_BRAKES_MIN_PRICE
 
 
 def from_row(row) -> Listing:

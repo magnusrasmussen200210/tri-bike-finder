@@ -76,6 +76,12 @@ def test_brakes_and_types():
     assert not detect_frameset("Rahmenhöhe 56 cm")
     assert looks_like_accessory("Selle Italia Watt Sattel Triathlon")
     assert not looks_like_accessory("Canyon Speedmax Rahmen mit Lenker")
+    assert looks_like_accessory("Trek Speed Concept Aerobars von 2025")
+    assert looks_like_accessory("Giant Trinity Zeitfahrgabel / TT Gabel, uci legal")
+    assert looks_like_accessory("2 Fahrradreifen RITCHEY Speedmax Cross 700 x 35c")
+    assert not looks_like_accessory("Specialized SHIV Comp Triathlon Zeitrad Rennrad Carbon")
+    assert buycycle.clean_card_title("High demand 14 Orbea Custom 105 Di2 S • 2018 • Shimano") == \
+        "Orbea Custom 105 Di2 S"
 
 
 def test_kleinanzeigen_search():
@@ -141,14 +147,16 @@ def test_flow(tmp_path):
     finder_main.check_source("kleinanzeigen", src, db, tg, None)
     assert len(tg.sent) == 1 and "Now watching" in tg.sent[0]  # first run: summary only
 
-    src.listings += [_l(2, 3000), _l(3, 3000, brakes="rim"), _l(4, 3500, brakes="unknown")]
+    src.listings += [_l(2, 3000), _l(3, 3000, brakes="rim"), _l(4, 3500, brakes="unknown"),
+                     _l(5, 800, brakes="unknown")]
     finder_main.check_source("kleinanzeigen", src, db, tg, None)
-    assert len(tg.sent) == 2 and "Bike 2" in tg.sent[1]
+    assert len(tg.sent) == 3 and "Bike 2" in tg.sent[1]
+    assert "Bike 4" in tg.sent[2] and "brakes not stated" in tg.sent[2]
 
     finder_main.check_source("kleinanzeigen", src, db, tg, None)
-    assert len(tg.sent) == 2  # nothing repeated
+    assert len(tg.sent) == 3  # nothing repeated
 
     src.listings[1] = _l(2, 2500)
     finder_main.check_source("kleinanzeigen", src, db, tg, None)
-    assert len(tg.sent) == 3 and "Price drop" in tg.sent[2] and "€2.500" in tg.sent[2]
+    assert len(tg.sent) == 4 and "Price drop" in tg.sent[3] and "€2.500" in tg.sent[3]
     assert db.conn.execute("SELECT COUNT(*) FROM price_history WHERE listing_id='2'").fetchone()[0] == 2

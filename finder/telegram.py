@@ -57,6 +57,8 @@ def format_listing(l: Listing, previous_price: float | None = None) -> str:
         details.append("frameset only")
     if l.location:
         details.append(l.location)
+    if l.brakes == "unknown":
+        details.append("brakes not stated, check the photos")
     if details:
         lines.append("ℹ️ " + html.escape(" · ".join(details)))
     lines.append("📈 Estimated profit: coming once the price model has enough data")

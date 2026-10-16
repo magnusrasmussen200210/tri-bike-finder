@@ -18,6 +18,14 @@ def _page_url(n: int) -> str:
     return SEARCH_URL if n == 1 else f"{SEARCH_URL}/page/{n}"
 
 
+def clean_card_title(text: str) -> str:
+    """'High demand 14 Orbea Custom 105 S • 2018 • Shimano' -> 'Orbea Custom 105 S'."""
+    t = text.split("•")[0]
+    t = re.sub(r"^\s*(high demand|new|neu|sale|reduced)\s+", "", t, flags=re.I)
+    t = re.sub(r"^\s*\d+\s+", "", t)  # watch counter shown on the card
+    return " ".join(t.split())
+
+
 def parse_search_page(html: str) -> list[Listing]:
     """Product cards from a search page. Title/price are best-effort here."""
     soup = BeautifulSoup(html, "html.parser")
@@ -32,7 +40,7 @@ def parse_search_page(html: str) -> list[Listing]:
         pm = re.search(r"€\s?\d[\d.,]*", text) or re.search(r"\d[\d.,]*\s?€", text)
         if pm:
             price = parse_price(pm.group(0))
-        title = text.split("€")[0].strip() or m.group(1).replace("-", " ")
+        title = clean_card_title(text.split("€")[0]) or m.group(1).replace("-", " ")
         url = f"{BASE}/en-de/product/{m.group(1)}"
         old = found.get(pid)
         if old is None or (price and not old.price) or len(title) > len(old.title):
