@@ -136,6 +136,10 @@ def main() -> int:
     load_env(ROOT / ".env")
     db = DB(os.environ.get("FINDER_DB", str(ROOT / "listings.db")))
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    if not token and not args.dry_run:
+        # Don't use up the "first run" before messages can actually be delivered.
+        print("No TELEGRAM_BOT_TOKEN set yet; skipping this check.")
+        return 0
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "") or db.setting("telegram_chat_id") or ""
     if token and not chat_id and not args.dry_run:
         # Whoever sent the bot a message is the person to notify.
