@@ -23,6 +23,11 @@ for url in URLS:
     print("article.aditem", len(soup.select("article.aditem")),
           "| data-adid", len(re.findall(r"data-adid", r.text)),
           "| s-anzeige links", len(re.findall(r"/s-anzeige/", r.text)))
+    ids = sorted({t["id"] for t in soup.find_all(id=True) if "viewad" in t["id"]})
+    print("viewad ids", ids)
+    for i in ("viewad-price", "viewad-description-text", "viewad-locality"):
+        el = soup.find(id=i)
+        print(i, "=>", el.get_text(" ", strip=True)[:300] if el else None)
     first = soup.select_one("article.aditem") or soup.select_one("[data-adid]")
     if first is not None:
         for art in soup.select("article[data-adid]")[:4]:

@@ -31,6 +31,17 @@ KA_SEARCH = """
 </article></li>
 </ul>"""
 
+KA_SEARCH_2026 = """<article class="flex justify-between p-medium" data-adid="3514330273"
+ data-href="/s-anzeige/canyon-speedmax-cf-8-0-m-di2-carbon-60-90-dura-ace/3514330273-217-3347">
+<div><script type="application/ld+json">{"title":"Canyon Speedmax CF 8.0 M | Di2 | Carbon 60/90 | Dura-Ace",
+"description":"Hochwertig aufgebaut, Scheibenbremsen, kaum gefahren","@type":"ImageObject"}</script></div>
+<div><div class="mb-xsmall flex"><div class="flex items-center"><svg data-title="locationOutline"><path d="M1"></path></svg>
+<span>10585 Charlottenburg</span></div></div>
+<div class="flex flex-col"><h3 class="mb-xsmall"><a href="/s-anzeige/canyon-speedmax-cf-8-0-m-di2-carbon-60-90-dura-ace/3514330273-217-3347">Canyon Speedmax CF 8.0 M | Di2 | Carbon 60/90 | Dura-Ace</a></h3>
+<p class="mb-xsmall text-bodyRegular">Zum Verkauf steht mein Canyon...</p>
+<div class="flex"><p class="my-xsmall text-title3">3.550 € VB</p><p class="m-xsmall line-through">3.900 €</p></div></div></div>
+</article>"""
+
 KA_AD = """<h1 id="viewad-title">Triathlonrad</h1><h2 id="viewad-price">650 € VB</h2>
 <p id="viewad-description-text">Cube Aerium 2019, Felgenbremsen, Shimano 105.</p>"""
 
@@ -77,6 +88,14 @@ def test_kleinanzeigen_search():
     assert ls[1].brakes == "unknown"
     detailed = kleinanzeigen.parse_ad_page(KA_AD, ls[1])
     assert detailed.brakes == "rim" and detailed.price == 650 and detailed.year == 2019
+
+
+def test_kleinanzeigen_search_2026_layout():
+    [l] = kleinanzeigen.parse_search_page(KA_SEARCH_2026)
+    assert l.listing_id == "3514330273" and l.price == 3550
+    assert l.title.startswith("Canyon Speedmax") and l.brand == "canyon"
+    assert l.location == "10585 Charlottenburg" and l.brakes == "disc"
+    assert l.url.endswith("/3514330273-217-3347")
 
 
 def test_kleinanzeigen_url():
