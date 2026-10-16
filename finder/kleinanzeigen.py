@@ -88,6 +88,9 @@ def parse_ad_page(html: str, listing: Listing) -> Listing:
         listing.description = desc_el.get_text(" ", strip=True)[:4000]
     details = " ".join(el.get_text(" ", strip=True)
                        for el in soup.select("#viewad-details, .addetailslist"))
+    loc_el = soup.select_one("#viewad-locality")
+    if loc_el:
+        listing.location = " ".join(loc_el.get_text(" ", strip=True).split())
     price_el = soup.select_one("#viewad-price")
     if price_el:
         listing.price = parse_price(price_el.get_text(" ", strip=True)) or listing.price

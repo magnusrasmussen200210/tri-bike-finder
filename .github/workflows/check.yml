@@ -46,7 +46,11 @@ jobs:
 
       - name: Show this run
         if: always()
-        run: sqlite3 -header listings.db "SELECT * FROM runs ORDER BY rowid DESC LIMIT 4" || true
+        run: |
+          sqlite3 -header listings.db "SELECT * FROM runs ORDER BY rowid DESC LIMIT 4" || true
+          sqlite3 listings.db "SELECT source, brakes, COUNT(*) FROM listings GROUP BY 1,2" || true
+          sqlite3 listings.db "SELECT source, price, is_frameset, title FROM listings WHERE brakes='disc' ORDER BY RANDOM() LIMIT 25" || true
+          sqlite3 listings.db "SELECT source, price, brakes, title FROM listings WHERE brakes!='disc' ORDER BY RANDOM() LIMIT 25" || true
 
       - name: Save database
         if: always() && !inputs.dry_run
