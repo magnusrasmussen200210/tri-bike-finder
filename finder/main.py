@@ -13,7 +13,7 @@ from pathlib import Path
 from . import buycycle, kleinanzeigen
 from .common import MAX_PRICE, Blocked, Listing, make_session
 from .db import DB
-from .telegram import Telegram, format_listing
+from .telegram import Telegram, find_chat_id, format_listing
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = {"buycycle": buycycle, "kleinanzeigen": kleinanzeigen}
@@ -128,13 +128,21 @@ def main() -> int:
     args = ap.parse_args()
 
     load_env(ROOT / ".env")
-    tg = Telegram(os.environ.get("TELEGRAM_BOT_TOKEN", ""),
-                  os.environ.get("TELEGRAM_CHAT_ID", ""), dry_run=args.dry_run)
+    db = DB(os.environ.get("FINDER_DB", str(ROOT / "listings.db")))
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "") or db.setting("telegram_chat_id") or ""
+    if token and not chat_id and not args.dry_run:
+        # Whoever sent the bot a message is the person to notify.
+        chat_id = find_chat_id(token) or ""
+        if not chat_id:
+            print("No Telegram chat yet: open your bot in Telegram and send it any message.")
+            return 1
+        db.set_setting("telegram_chat_id", chat_id)
+    tg = Telegram(token, chat_id, dry_run=args.dry_run)
     if args.test:
         tg.send("👋 Hi Magnus, the tri bike finder is connected and working.")
         return 0
 
-    db = DB(os.environ.get("FINDER_DB", str(ROOT / "listings.db")))
     session = make_session()
     status = 0
     for name, mod in SOURCES.items():

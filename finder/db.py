@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS price_history (
     price       REAL,
     seen_at     TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS settings (
+    key    TEXT PRIMARY KEY,
+    value  TEXT
+);
 CREATE TABLE IF NOT EXISTS runs (
     started_at  TEXT NOT NULL,
     source      TEXT NOT NULL,
@@ -103,6 +107,14 @@ class DB:
     def recent_statuses(self, source: str, n: int) -> list[str]:
         return [r[0] for r in self.conn.execute(
             "SELECT status FROM runs WHERE source=? ORDER BY rowid DESC LIMIT ?", (source, n))]
+
+    def setting(self, key: str) -> str | None:
+        row = self.conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+        return row[0] if row else None
+
+    def set_setting(self, key: str, value: str):
+        self.conn.execute("INSERT OR REPLACE INTO settings VALUES (?,?)", (key, value))
+        self.conn.commit()
 
     def _price(self, l: Listing, ts: str):
         self.conn.execute("INSERT INTO price_history VALUES (?,?,?,?)",

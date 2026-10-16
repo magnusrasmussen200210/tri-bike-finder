@@ -14,3 +14,10 @@ Tests: `python -m pytest tests`
 
 On the server: `journalctl -u tri-bike-finder -n 50` shows the last runs,
 `sqlite3 /opt/tri-bike-finder/listings.db "select * from runs order by rowid desc limit 5"`.
+
+## Running for free on GitHub Actions
+
+`.github/workflows/check.yml` runs a check every 15 minutes. It needs the repository
+secret `TELEGRAM_BOT_TOKEN`; the chat id is found automatically from the first message
+sent to the bot (or set the `TELEGRAM_CHAT_ID` secret). The database is kept as a single
+commit on the `data` branch. "Run workflow" with *dry_run* ticked tests without saving.
