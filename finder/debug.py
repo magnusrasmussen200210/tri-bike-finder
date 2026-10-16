@@ -25,7 +25,11 @@ for url in URLS:
           "| s-anzeige links", len(re.findall(r"/s-anzeige/", r.text)))
     first = soup.select_one("article.aditem") or soup.select_one("[data-adid]")
     if first is not None:
-        print("first item html:\n", str(first)[:2500])
+        for art in soup.select("article[data-adid]")[:4]:
+            print("--- item text:", " | ".join(art.stripped_strings)[:700])
+        html = str(first)
+        i = html.find("locationOutline")
+        print("html around location:\n", html[i:i + 3500])
     else:
         body = soup.body.get_text(" ", strip=True) if soup.body else r.text
         print("body text:", body[:1500])
