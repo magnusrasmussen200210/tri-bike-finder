@@ -139,6 +139,8 @@ def main() -> int:
     if not token and not args.dry_run:
         # Don't use up the "first run" before messages can actually be delivered.
         print("No TELEGRAM_BOT_TOKEN set yet; skipping this check.")
+        db.log_run("all", "no_token")
+        db.commit()
         return 0
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "") or db.setting("telegram_chat_id") or ""
     if token and not chat_id and not args.dry_run:
@@ -146,6 +148,8 @@ def main() -> int:
         chat_id = find_chat_id(token) or ""
         if not chat_id:
             print("No Telegram chat yet: open your bot in Telegram and send it any message.")
+            db.log_run("all", "no_chat")
+            db.commit()
             return 1
         db.set_setting("telegram_chat_id", chat_id)
     tg = Telegram(token, chat_id, dry_run=args.dry_run)
