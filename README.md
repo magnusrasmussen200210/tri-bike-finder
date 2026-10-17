@@ -17,7 +17,7 @@ On the server: `journalctl -u tri-bike-finder -n 50` shows the last runs,
 
 ## Running for free on GitHub Actions
 
-`.github/workflows/check.yml` runs a check every 15 minutes. It needs the repository
+`.github/workflows/check.yml` checks every 15 minutes (each run loops for ~6 hours, then starts the next). It needs the repository
 secret `TELEGRAM_BOT_TOKEN`; the chat id is found automatically from the first message
 sent to the bot (or set the `TELEGRAM_CHAT_ID` secret). The database is kept as a single
 commit on the `data` branch. "Run workflow" with *dry_run* ticked tests without saving.

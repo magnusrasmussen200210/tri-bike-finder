@@ -2,7 +2,7 @@ name: Check for bikes
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7 * * * *"   # backup only; runs chain themselves (see below)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: finder
@@ -20,7 +21,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
 
@@ -38,30 +39,38 @@ jobs:
             git show FETCH_HEAD:listings.db > listings.db
           fi
 
-      - name: Check buycycle and Kleinanzeigen
+      # GitHub's own 15-minute schedule is unreliable (often hours apart), so each run
+      # keeps checking every 15 minutes for almost 6 hours, then starts the next run.
+      - name: Check buycycle and Kleinanzeigen every 15 minutes
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python -m finder.main ${{ inputs.dry_run && '--dry-run' || '' }}
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: |
+          end=$(( $(date +%s) + 340 * 60 ))
+          while :; do
+            started=$(date +%s)
+            python -m finder.main ${DRY_RUN:+--dry-run} || echo "check failed, will retry next round"
+            sqlite3 listings.db "SELECT started_at, source, status, found, new FROM runs ORDER BY rowid DESC LIMIT 2" || true
+            [ -n "$DRY_RUN" ] && break
+            deploy/save_db.sh || echo "saving the database failed"
+            next=$(( started + 15 * 60 ))
+            [ "$next" -ge "$end" ] && break
+            sleep $(( next - $(date +%s) > 0 ? next - $(date +%s) : 0 ))
+          done
 
-      - name: Show this run
+      - name: Show listing sample
         if: always()
         run: |
-          sqlite3 -header listings.db "SELECT * FROM runs ORDER BY rowid DESC LIMIT 4" || true
           sqlite3 listings.db "SELECT source, brakes, COUNT(*) FROM listings GROUP BY 1,2" || true
-          sqlite3 listings.db "SELECT source, price, is_frameset, title FROM listings WHERE brakes='disc' ORDER BY RANDOM() LIMIT 25" || true
-          sqlite3 listings.db "SELECT source, price, brakes, title FROM listings WHERE brakes!='disc' ORDER BY RANDOM() LIMIT 25" || true
+          sqlite3 listings.db "SELECT source, price, brakes, is_frameset, title FROM listings WHERE alerted=1 ORDER BY first_seen DESC LIMIT 15" || true
 
-      - name: Save database
-        if: always() && !inputs.dry_run
-        run: |
-          [ -f listings.db ] || exit 0
-          mkdir /tmp/data && cp listings.db /tmp/data/ && cd /tmp/data
-          git init -q -b data
-          git add listings.db
-          git -c user.name="bike-finder" -c user.email="bike-finder@users.noreply.github.com" \
-            commit -q -m "Listing database"
-          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" data
+      - name: Start the next run
+        if: ${{ !inputs.dry_run && !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run check.yml --ref main
 
       # GitHub pauses schedules after 60 days without commits; keep it awake.
       - name: Keep schedule alive
